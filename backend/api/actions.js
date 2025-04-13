@@ -63,6 +63,46 @@ class Actions {
             res.status(500).json({ error: "Błąd serwera" });
         }
     }
+
+    async editProfile(req, res) {
+        try {
+            const userId = req.user.id;
+            const { firstName, lastName, email, bio, sex } = req.body;
+    
+            const updatedUser = await User.findByIdAndUpdate(
+                userId,
+                {
+                    $set: { firstName, lastName, email, bio, sex }
+                },
+                { new: true }
+            );
+    
+            if (!updatedUser) {
+                return res.status(404).json({ error: "Użytkownik nie znaleziony" });
+            }
+    
+            res.status(200).json({ message: "Profil zaktualizowany", user: updatedUser });
+        } catch (err) {
+            console.error("Błąd przy edycji profilu:", err);
+            res.status(500).json({ error: "Błąd serwera" });
+        }
+    }
+
+    async getProfile(req, res) {
+        try {
+            const userId = req.user.id;
+            const user = await User.findById(userId).select('-password');
+    
+            if (!user) {
+                return res.status(404).json({ error: "Użytkownik nie znaleziony" });
+            }
+    
+            res.status(200).json({ user });
+        } catch (err) {
+            console.error("Błąd przy pobieraniu profilu:", err);
+            res.status(500).json({ error: "Błąd serwera" });
+        }
+    }
     
 }
 

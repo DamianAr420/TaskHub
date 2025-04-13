@@ -1,10 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './components/home';
-import Registration from './components/registration';
-import Login from './components/login';
-import Profile from './components/profile';
-import Dashboard from './components/dashboard';
+import Home from './pages/home';
+import Registration from './pages/registration';
+import Login from './pages/login';
+import Profile from './pages/profile/profile';
+import EditProfile from './pages/profile/editProfile';
+import Dashboard from './pages/dashboard';
+import Projects from './pages/projects';
 
 
 function App() {
@@ -15,8 +17,10 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/registration" element={<Registration />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/profil" element={<Profile />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/projekty" element={<Projects />} />
         </Routes>
       </div>
     </Router>

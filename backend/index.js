@@ -15,6 +15,8 @@ app.use(cors({
 
 app.post('/registration', apiRouters);
 app.post('/login', apiRouters);
+app.post('/editProfile', apiRouters);
+app.get('/getProfile', apiRouters);
 
 app.listen(port, () => {
     console.log('Serwer działa na porcie: ' + port);

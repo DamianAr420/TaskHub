@@ -2,23 +2,23 @@ import { jwtDecode } from 'jwt-decode';
 
 interface DecodedToken {
   login: string;
-  _id: string;
+  id: string;
 }
 
-export const getUserInfoFromToken = (): { login: string | null; _id: string | null } => {
+export const getUserInfoFromToken = (): { login: string | null; id: string | null } => {
   const token = localStorage.getItem('token');
   if (token) {
     try {
       const decoded = jwtDecode<DecodedToken>(token);
       return {
         login: decoded?.login || null,
-        _id: decoded?._id || null,
+        id: decoded?.id || null,
       };
     } catch (error) {
       console.error('Błąd dekodowania tokena', error);
     }
-  }
-  return { login: null, _id: null };
+  } else console.error("brak tokenu")
+  return { login: null, id: null };
 };
 
 export const getToken = (): string | null => {

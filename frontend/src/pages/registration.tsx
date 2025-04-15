@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiRequest } from '../helpers/api';
 
 export default function Registration() {
     const [message, setMessage] = useState("");
@@ -18,33 +19,20 @@ export default function Registration() {
             return;
         }
     
-        try {
-            const url = process.env.REACT_APP_REGISTRATION as string;
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ login, password, sex })
-            });
+        const res = await apiRequest('/registration', {
+            method: 'POST',
+            body: { login, password, sex },
+        });
     
-            const data = await response.json();
-            if (response.ok) {
-                setMessage("✅ Użytkownik utworzony!");
-                setLogin("");
-                setPassword("");
-                setConfirmPassword("");
-                setSex("");
-                navigate("/login")
-            } else {
-                setMessage(data.error || "❌ Błąd rejestracji");
-            }
-        } catch (err) {
-            if (err instanceof Error) {
-                setMessage(`❌ Błąd serwera: ${err.message}`);
-            } else {
-                setMessage("❌ Wystąpił nieznany błąd");
-            }
+        if (res.ok) {
+            setMessage("✅ Użytkownik utworzony!");
+            setLogin("");
+            setPassword("");
+            setConfirmPassword("");
+            setSex("");
+            navigate("/login")
+        } else {
+            setMessage(res.data.error || "❌ Błąd rejestracji");
         }
     };
 
@@ -110,20 +98,20 @@ export default function Registration() {
                             <div className="flex items-center">
                                 <input
                                     type="radio"
-                                    value="male"
+                                    value="mężczyzna"
                                     id="male"
                                     name="gender"
-                                    checked={sex === "male"}
+                                    checked={sex === "mężczyzna"}
                                     onChange={(e) => setSex(e.target.value)}
                                     className="mr-2"
                                 />
                                 <label htmlFor="male" className="text-white mr-4">Mężczyzna</label>
                                 <input
                                     type="radio"
-                                    value="female"
+                                    value="kobieta"
                                     id="female"
                                     name="gender"
-                                    checked={sex === "female"}
+                                    checked={sex === "kobieta"}
                                     onChange={(e) => setSex(e.target.value)}
                                     className="mr-2"
                                 />

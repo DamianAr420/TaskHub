@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiRequest } from '../helpers/api';
 
 export default function Login() {
     const [login, setLogin] = useState('');
@@ -12,23 +13,17 @@ export default function Login() {
         setMessage('');
 
         try {
-            const url = process.env.REACT_APP_LOGIN as string;
-            const response = await fetch(url, {
+            const res = await apiRequest('/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ login, password })
+                body: { login, password },
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                localStorage.setItem('token', data.token);
+            if (res.ok) {
+                localStorage.setItem('token', res.data.token);
                 setMessage('✅ Zalogowano pomyślnie!');
                 navigate('/');
             } else {
-                setMessage(data.error || '❌ Błąd logowania');
+                setMessage(res.data.error || '❌ Błąd logowania');
             }
         } catch (err) {
             if (err instanceof Error) {
@@ -51,14 +46,20 @@ export default function Login() {
                     <h1 className="text-3xl font-bold text-center text-white mb-6">Logowanie</h1>
 
                     {message && (
-                        <div className={`mb-4 p-3 rounded-md text-center font-medium ${message.startsWith("✅") ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>
+                        <div
+                            className={`mb-4 p-3 rounded-md text-center font-medium ${
+                                message.startsWith('✅') ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+                            }`}
+                        >
                             {message}
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
-                            <label className="block text-white text-lg mb-2" htmlFor="login">Login</label>
+                            <label className="block text-white text-lg mb-2" htmlFor="login">
+                                Login
+                            </label>
                             <input
                                 id="login"
                                 type="text"
@@ -71,7 +72,9 @@ export default function Login() {
                         </div>
 
                         <div className="mb-6">
-                            <label className="block text-white text-lg mb-2" htmlFor="password">Hasło</label>
+                            <label className="block text-white text-lg mb-2" htmlFor="password">
+                                Hasło
+                            </label>
                             <input
                                 id="password"
                                 type="password"

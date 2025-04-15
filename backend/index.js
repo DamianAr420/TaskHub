@@ -15,8 +15,13 @@ app.use(cors({
 
 app.post('/registration', apiRouters);
 app.post('/login', apiRouters);
-app.post('/editProfile', apiRouters);
+app.post('/editProfile/:id', apiRouters);
 app.get('/getProfile', apiRouters);
+app.post('/projects', apiRouters);
+app.post('/projects/:projectId/tasks', apiRouters);
+app.post('/projects/:projectId/tasks/move', apiRouters);
+app.get('/projects', apiRouters);
+
 
 app.listen(port, () => {
     console.log('Serwer działa na porcie: ' + port);

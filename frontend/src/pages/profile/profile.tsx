@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../helpers/api';
 import { getToken, removeToken } from '../../utils/auth';
+import Header from '../header';
 
 interface ProfileData {
     login: string;
@@ -47,26 +48,11 @@ const Profile: React.FC = () => {
         fetchProfile();
     }, [navigate]);
 
-    const handleLogout = () => {
-        removeToken();
-        navigate('/login');
-    };
-
     if (loading) return <div className="text-center mt-20 text-lg">Ładowanie profilu...</div>;
 
     return (
-        <div className="w-full h-screen bg-gray-100">
-            <header className="bg-gray-800 p-4 text-white flex items-center justify-between">
-                <Link to="/" className="text-lg hover:text-blue-400">
-                    &#8592; Strona główna
-                </Link>
-                <button
-                    onClick={handleLogout}
-                    className="bg-red-600 px-4 py-1 rounded hover:bg-red-700 text-sm"
-                >
-                    Wyloguj się
-                </button>
-            </header>
+        <div className="w-full h-screen bg-gray-100 overflow-hidden">
+            <Header />
 
             <section className="flex justify-center items-center h-full bg-gray-200">
                 <div className="bg-white p-8 rounded-lg shadow-lg w-96">

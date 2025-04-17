@@ -6,12 +6,16 @@ import Login from './pages/login';
 import Profile from './pages/profile/profile';
 import EditProfile from './pages/profile/editProfile';
 import Dashboard from './pages/dashboard';
-import Projects from './pages/projects';
+import Projects from './pages/project/projects';
+import AddProject from './pages/project/addProjects';
+import ProjectDetails from './pages/project/projectDetails';
+import TokenExp from './components/tokenExpirationWarning';
 
 
 function App() {
   return (
     <Router>
+      <TokenExp />
       <div>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -21,6 +25,8 @@ function App() {
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/projekty" element={<Projects />} />
+          <Route path="/projekty/nowy" element={<AddProject />} />
+          <Route path="/projekt/:projectId" element={<ProjectDetails />} />
         </Routes>
       </div>
     </Router>

@@ -107,21 +107,25 @@ class Actions {
 
     async createProject(req, res) {
         try {
-            const { name, description, columns, members } = req.body;
+            const { name, description } = req.body;
             const userId = req.user?.id;
     
-            const formattedColumns = columns.map(name => ({
-                name,
-                tasks: []
-            }));
+            if (!name) {
+                return res.status(400).json({ error: "Nazwa projektu jest wymagana" });
+            }
     
+            const now = new Date();
+
             const project = new Project({
                 name,
                 description,
-                columns: formattedColumns,
-                members,
-                createdBy: userId
+                columns: [],
+                members: [userId],
+                createdBy: userId,
+                createdAt: new Date(now.setHours(0, 0, 0, 0)),
+                updatedAt: new Date()
             });
+
     
             await project.save();
             res.status(201).json({ message: "Projekt utworzony", project });
@@ -129,7 +133,7 @@ class Actions {
             console.error("Błąd tworzenia projektu:", err);
             res.status(500).json({ error: "Błąd serwera" });
         }
-    }
+    }    
     
     async addTask(req, res) {
         try {
@@ -183,15 +187,181 @@ class Actions {
             const userId = req.user.id;
             const projects = await Project.find({ 
                 $or: [{ createdBy: userId }, { members: userId }]
-            }).populate('members', 'login');
-
+            })
+            .populate('members', 'login')
+            .populate('createdBy', 'login firstName lastName');
             res.status(200).json({ projects });
         } catch (err) {
             console.error("Błąd pobierania projektów:", err);
             res.status(500).json({ error: "Błąd serwera" });
         }
     }
+
+    async getProject(req, res) {
+        const { projectId } = req.params;
+
+        try {
+            const project = await Project.findById(projectId)
+            .populate('createdBy', 'login firstName lastName')
+            .populate('members', 'login firstName lastName');
+
+            if (!project) {
+            return res.status(404).json({ message: 'Projekt nie istnieje.' });
+            }
+
+            if (!project.members.some(member => member._id.equals(req.user.id))) {
+              return res.status(403).json({ message: 'Brak dostępu do tego projektu.' });
+            }
+
+            res.status(200).json({ project });
+        } catch (err) {
+            console.error('❌ Błąd przy pobieraniu projektu:', err);
+            res.status(500).json({ message: 'Wewnętrzny błąd serwera.' });
+        }
+    }
+
+    async refreshToken(req, res) {
+        try {
+            const user = req.user;
+        
+            const newToken = jwt.sign(
+              { id: user.id, login: user.login },
+              process.env.JWT_SECRET,
+              { expiresIn: '15m' }
+            );
+        
+            res.status(200).json({ token: newToken });
+          } catch (err) {
+            console.error("Błąd odświeżania tokena:", err);
+            res.status(500).json({ error: 'Nie udało się odświeżyć tokena' });
+          }
+    }
+
+    async createGroup(req, res) {
+        const { projectId } = req.params;
+        const { name, userId } = req.body;
+
+        if (!name) {
+            return res.status(400).json({ error: 'Nazwa grupy jest wymagana' });
+        }
+
+        try {
+            const project = await Project.findById(projectId);
+            if (!project) {
+                return res.status(404).json({ error: 'Projekt nie istnieje' });
+            }
+
+            const newGroup = {
+                name,
+                createdBy: userId,
+                createdAt: new Date().setHours(0, 0, 0, 0),
+                updatedAt: new Date(),
+                columns: [],
+                settings: [],
+                logs: [{
+                    action: 'Utworzenie grupy',
+                    by: userId,
+                    date: new Date()
+                }]
+            };
+
+            project.groups.push(newGroup);
+            project.updatedAt = new Date();
+
+            await project.save();
+
+            res.status(201).json({ message: 'Grupa dodana', group: newGroup });
+        } catch (error) {
+                console.error('Błąd dodawania grupy:', error);
+                res.status(500).json({ error: 'Wewnętrzny błąd serwera' });
+        }
+    }
+
+    async createColumn(req, res) {
+        try {
+          const { projectId, groupId } = req.params;
+          const { name } = req.body;
+          const userId = req.user.id;
     
+          if (!name) {
+            return res.status(400).json({ error: "Nazwa kolumny jest wymagana" });
+          }
+    
+          const project = await Project.findById(projectId);
+          if (!project) {
+            return res.status(404).json({ error: "Projekt nie znaleziony" });
+          }
+    
+          const group = project.groups.id(groupId);
+          if (!group) {
+            return res.status(404).json({ error: "Grupa nie istnieje" });
+          }
+    
+          const newColumn = {
+            name,
+            tasks: [],
+          };
+          group.columns.push(newColumn);
+    
+          group.updatedAt = new Date();
+          project.updatedAt = new Date();
+    
+          await project.save();
+    
+          const created = group.columns[group.columns.length - 1];
+          res.status(201).json({ message: "Kolumna dodana", column: created });
+        } catch (err) {
+          console.error("Błąd tworzenia kolumny:", err);
+          res.status(500).json({ error: "Błąd serwera" });
+        }
+      }
+
+      async createTask(req, res) {
+        try {
+          const { projectId, groupId, columnId } = req.params;
+          const { title, description, assignedTo } = req.body;
+    
+          if (!title) {
+            return res.status(400).json({ error: "Tytuł zadania jest wymagany" });
+          }
+    
+          const project = await Project.findById(projectId);
+          if (!project) {
+            return res.status(404).json({ error: "Projekt nie znaleziony" });
+          }
+    
+          const group = project.groups.id(groupId);
+          if (!group) {
+            return res.status(404).json({ error: "Grupa nie istnieje" });
+          }
+    
+          const column = group.columns.id(columnId);
+          if (!column) {
+            return res.status(404).json({ error: "Kolumna nie istnieje" });
+          }
+    
+          const newTask = {
+            title,
+            description: description || "",
+            assignedTo: assignedTo || null,
+            createdAt: new Date()
+          };
+    
+          column.tasks.push(newTask);
+    
+          group.updatedAt = new Date();
+          project.updatedAt = new Date();
+    
+          await project.save();
+    
+          const created = column.tasks[column.tasks.length - 1];
+          res.status(201).json({ message: "Zadanie dodane", task: created });
+        } catch (err) {
+          console.error("Błąd tworzenia zadania:", err);
+          res.status(500).json({ error: "Błąd serwera" });
+        }
+      }
+
 }
 
 module.exports = new Actions();

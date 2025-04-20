@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { addTaskToColumn } from "../../helpers/groupService";
+import { addTaskToColumn } from "../../../helpers/groupService";
 
 interface AddTaskProps {
   projectId: string;

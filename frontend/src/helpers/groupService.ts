@@ -22,7 +22,6 @@ export const addTaskToColumn = async (
   description?: string
 ) => {
   const token = getToken() ?? undefined;
-
   return apiRequest(
     `/project/${projectId}/groups/${groupId}/columns/${columnId}/tasks`,
     {
@@ -64,4 +63,54 @@ export const deleteGroup = async (projectId: string, groupId: string) => {
     method: "DELETE",
     token,
   });
+};
+
+export const editGroup = async (
+  projectId: string,
+  groupId: string,
+  name: string
+) => {
+  const token = getToken() ?? undefined;
+  return apiRequest(`/project/${projectId}/groups/${groupId}`, {
+    method: "PUT",
+    token,
+    body: { name },
+  });
+};
+
+export const editColumn = async (
+  projectId: string,
+  groupId: string,
+  columnId: string,
+  name: string
+) => {
+  const token = getToken() ?? undefined;
+  return apiRequest(
+    `/project/${projectId}/groups/${groupId}/columns/${columnId}`,
+    {
+      method: "PUT",
+      token,
+      body: { name },
+    }
+  );
+};
+
+export const editTask = async (
+  projectId: string,
+  groupId: string,
+  columnId: string,
+  taskId: string,
+  title: string,
+  description?: string,
+  assignedTo?: string
+) => {
+  const token = getToken() ?? undefined;
+  return apiRequest(
+    `/project/${projectId}/groups/${groupId}/columns/${columnId}/tasks/${taskId}`,
+    {
+      method: "PUT",
+      token,
+      body: { title, description, assignedTo },
+    }
+  );
 };

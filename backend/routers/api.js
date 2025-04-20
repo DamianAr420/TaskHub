@@ -27,4 +27,9 @@ router.delete('/project/:projectId/groups/:groupId', verifyToken, actions.delete
 router.delete('/project/:projectId/groups/:groupId/columns/:columnId', verifyToken, actions.deleteColumn);
 router.delete('/project/:projectId/groups/:groupId/columns/:columnId/tasks/:taskId', verifyToken, actions.deleteTask);
 
+// Edytowanie grupy / kolumny / zadania
+router.put('/project/:projectId/groups/:groupId', verifyToken, actions.editGroup);
+router.put('/project/:projectId/groups/:groupId/columns/:columnId', verifyToken, actions.editColumn);
+router.put('/project/:projectId/groups/:groupId/columns/:columnId/tasks/:taskId', verifyToken, actions.editTask);
+
 module.exports = router;

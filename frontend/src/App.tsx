@@ -7,7 +7,7 @@ import Profile from './pages/profile/profile';
 import EditProfile from './pages/profile/editProfile';
 import Dashboard from './pages/dashboard';
 import Projects from './pages/project/projects';
-import AddProject from './pages/project/addProjects';
+import AddProject from './pages/project/add/addProjects';
 import ProjectDetails from './pages/project/projectDetails';
 import TokenExp from './components/tokenExpirationWarning';
 

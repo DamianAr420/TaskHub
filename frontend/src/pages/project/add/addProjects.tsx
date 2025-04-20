@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { apiRequest } from '../../helpers/api';
-import { getToken } from '../../utils/auth';
+import { apiRequest } from '../../../helpers/api';
+import { getToken } from '../../../utils/auth';
 
 const AddProject: React.FC = () => {
   const navigate = useNavigate();

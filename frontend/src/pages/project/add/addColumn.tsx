@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { addColumnToGroup } from '../../helpers/groupService';
+import { addColumnToGroup } from '../../../helpers/groupService';
 
 interface AddColumnProps {
   projectId: string;

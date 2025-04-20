@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { apiRequest } from "../../helpers/api";
-import { getToken, getUserInfoFromToken } from "../../utils/auth";
+import { apiRequest } from "../../../helpers/api";
+import { getToken, getUserInfoFromToken } from "../../../utils/auth";
 
 interface AddGroupProps {
   projectId: string;

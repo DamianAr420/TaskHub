@@ -3,15 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiRequest } from "../../helpers/api";
 import { getToken } from "../../utils/auth";
 import Header from "../header";
-import AddGroup from "./addGroup";
-import AddColumn from "./addColumn";
-import AddTask from "./addTask";
+import AddGroup from "./add/addGroup";
+import AddColumn from "./add/addColumn";
+import AddTask from "./add/addTask";
 import {
   deleteGroup,
   deleteColumn,
   deleteTask,
 } from "../../helpers/groupService";
 import Confirmation from "../../components/confirmation";
+import EditGroup from "./edit/editGroup";
+import EditColumn from "./edit/editColumn";
+import EditTask from "./edit/editTask";
+import { Task, Column, Group } from "../../interfaces/interfaces";
 
 interface UserShort {
   _id: string;
@@ -20,33 +24,11 @@ interface UserShort {
   lastName?: string;
 }
 
-interface Task {
-  _id: string;
-  title: string;
-  description?: string;
-  createdAt: string;
-}
-
-interface Column {
-  _id: string;
-  name: string;
-  tasks: Task[];
-}
-
-interface Group {
-  _id: string;
-  name: string;
-  createdBy: string; // userId
-  createdAt: Date;
-  updatedAt: Date;
-  columns: Column[];
-}
-
 interface Project {
   _id: string;
   name: string;
   description?: string;
-  createdBy: UserShort; // object with login
+  createdBy: UserShort;
   createdAt: Date;
   updatedAt?: Date;
   members?: UserShort[];
@@ -65,15 +47,17 @@ const ProjectDetails: React.FC = () => {
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Confirmation dialog
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState("");
   const [onConfirmAction, setOnConfirmAction] = useState<() => void>(
     () => () => {}
   );
 
-  // Fetch project
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editingColumn, setEditingColumn] = useState<Column | null>(null);
+
   useEffect(() => {
     const fetchProject = async () => {
       const token = getToken();
@@ -91,7 +75,6 @@ const ProjectDetails: React.FC = () => {
     fetchProject();
   }, [projectId, navigate]);
 
-  // Local add handlers
   const handleColumnAdded = (column: { _id: string; name: string }) => {
     if (!project) return;
     setProject({
@@ -103,6 +86,7 @@ const ProjectDetails: React.FC = () => {
       ),
     });
   };
+
   const handleTaskAdded = (task: {
     _id: string;
     title: string;
@@ -133,7 +117,6 @@ const ProjectDetails: React.FC = () => {
     });
   };
 
-  // Confirmation helper
   const confirmAction = (message: string, action: () => void) => {
     setConfirmMessage(message);
     setOnConfirmAction(() => () => {
@@ -143,9 +126,10 @@ const ProjectDetails: React.FC = () => {
     setShowConfirmDialog(true);
   };
 
-  // Delete handlers
-  const onDeleteGroup = (groupId: string) =>
-    confirmAction("Na pewno usunąć grupę?", async () => {
+  const onDeleteGroup = (groupId: string) => {
+    const group = project?.groups.find((g) => g._id === groupId);
+    const name = group?.name || "";
+    confirmAction(`Na pewno usunąć grupę "${name}"?`, async () => {
       const res = await deleteGroup(projectId!, groupId);
       if (res.ok && project) {
         setProject({
@@ -155,9 +139,13 @@ const ProjectDetails: React.FC = () => {
         if (selectedGroup === groupId) setSelectedGroup("");
       }
     });
+  };
 
-  const onDeleteColumn = (columnId: string) =>
-    confirmAction("Na pewno usunąć kolumnę?", async () => {
+  const onDeleteColumn = (columnId: string) => {
+    const group = project?.groups.find((g) => g._id === selectedGroup);
+    const column = group?.columns.find((c) => c._id === columnId);
+    const name = column?.name || "";
+    confirmAction(`Na pewno usunąć kolumnę "${name}"?`, async () => {
       const res = await deleteColumn(projectId!, selectedGroup, columnId);
       if (res.ok && project) {
         setProject({
@@ -170,9 +158,14 @@ const ProjectDetails: React.FC = () => {
         });
       }
     });
+  };
 
-  const onDeleteTask = (columnId: string, taskId: string) =>
-    confirmAction("Na pewno usunąć zadanie?", async () => {
+  const onDeleteTask = (columnId: string, taskId: string) => {
+    const group = project?.groups.find((g) => g._id === selectedGroup);
+    const column = group?.columns.find((c) => c._id === columnId);
+    const task = column?.tasks.find((t) => t._id === taskId);
+    const title = task?.title || "";
+    confirmAction(`Na pewno usunąć zadanie "${title}"?`, async () => {
       const res = await deleteTask(projectId!, selectedGroup, columnId, taskId);
       if (res.ok && project) {
         setProject({
@@ -195,6 +188,14 @@ const ProjectDetails: React.FC = () => {
         });
       }
     });
+  };
+
+  const findLogin = (userId: string) => {
+    if (!project) return userId;
+    const member = project.members?.find((u) => u._id === userId);
+    if (member) return member.login;
+    return project.createdBy._id === userId ? project.createdBy.login : userId;
+  };
 
   if (loading)
     return <p className="text-center mt-10">⏳ Ładowanie projektu…</p>;
@@ -205,16 +206,10 @@ const ProjectDetails: React.FC = () => {
       </p>
     );
 
-  // helper: find login by ID
-  const findLogin = (userId: string) =>
-    project.members?.find((u) => u._id === userId)?.login ||
-    (project.createdBy._id === userId ? project.createdBy.login : userId);
-
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <Header />
 
-      {/* Confirmation */}
       <Confirmation
         isOpen={showConfirmDialog}
         message={confirmMessage}
@@ -222,7 +217,6 @@ const ProjectDetails: React.FC = () => {
         onCancel={() => setShowConfirmDialog(false)}
       />
 
-      {/* Add modals */}
       {addGroup && (
         <AddGroup
           projectId={projectId!}
@@ -230,6 +224,96 @@ const ProjectDetails: React.FC = () => {
           onGroupAdded={() => setAddGroup(false)}
         />
       )}
+
+      {editingGroup && (
+        <EditGroup
+          projectId={projectId!}
+          group={editingGroup}
+          onCancel={() => setEditingGroup(null)}
+          onGroupUpdated={(updatedGroup) => {
+            setProject((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    groups: prev.groups.map((g) =>
+                      g._id === updatedGroup._id ? updatedGroup : g
+                    ),
+                  }
+                : null
+            );
+            setEditingGroup(null);
+          }}
+        />
+      )}
+
+      {editingColumn && (
+        <EditColumn
+          projectId={projectId!}
+          groupId={selectedGroup}
+          column={editingColumn}
+          onCancel={() => setEditingColumn(null)}
+          onColumnUpdated={(updatedColumn) => {
+            setProject((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    groups: prev.groups.map((g) =>
+                      g._id !== selectedGroup
+                        ? g
+                        : {
+                            ...g,
+                            columns: g.columns.map((c) =>
+                              c._id === updatedColumn._id ? updatedColumn : c
+                            ),
+                          }
+                    ),
+                  }
+                : null
+            );
+            setEditingColumn(null);
+          }}
+        />
+      )}
+
+      {selectedTask && selectedColumn && (
+        <EditTask
+          projectId={projectId!}
+          groupId={selectedGroup}
+          columnId={selectedColumn}
+          task={selectedTask}
+          onCancel={() => setSelectedTask(null)}
+          onTaskUpdated={(updatedTask) => {
+            setProject((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    groups: prev.groups.map((g) =>
+                      g._id !== selectedGroup
+                        ? g
+                        : {
+                            ...g,
+                            columns: g.columns.map((col) =>
+                              col._id !== selectedColumn
+                                ? col
+                                : {
+                                    ...col,
+                                    tasks: col.tasks.map((t) =>
+                                      t._id === updatedTask._id
+                                        ? updatedTask
+                                        : t
+                                    ),
+                                  }
+                            ),
+                          }
+                    ),
+                  }
+                : null
+            );
+            setSelectedTask(null);
+          }}
+        />
+      )}
+
       {showAddColumn && selectedGroup && (
         <AddColumn
           projectId={projectId!}
@@ -241,6 +325,7 @@ const ProjectDetails: React.FC = () => {
           }}
         />
       )}
+
       {showAddTask && selectedGroup && selectedColumn && (
         <AddTask
           projectId={projectId!}
@@ -255,11 +340,9 @@ const ProjectDetails: React.FC = () => {
       )}
 
       <div className="flex flex-1">
-        {/* Sidebar */}
         <aside className="w-64 bg-gray-200 p-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              {/* click clears selection */}
               <h2
                 className="text-lg font-bold cursor-pointer hover:underline"
                 onClick={() => setSelectedGroup("")}
@@ -278,12 +361,22 @@ const ProjectDetails: React.FC = () => {
                 project.groups.map((g) => (
                   <li
                     key={g._id}
-                    className={`relative bg-white p-2 rounded shadow hover:bg-gray-100 cursor-pointer ${
-                      g._id === selectedGroup ? "ring-2 ring-blue-500" : ""
-                    }`}
+                    className={`
+                      relative bg-white p-2 rounded shadow hover:bg-gray-100 cursor-pointer
+                      ${g._id === selectedGroup ? "ring-2 ring-blue-500" : ""}
+                    `}
                     onClick={() => setSelectedGroup(g._id)}
                   >
                     {g.name}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingGroup(g);
+                      }}
+                      className="absolute right-7 top-2 text-blue-500"
+                    >
+                      ✏️
+                    </button>
                     <button
                       onClick={() => onDeleteGroup(g._id)}
                       className="absolute right-2 top-2 text-red-500"
@@ -299,7 +392,6 @@ const ProjectDetails: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main area */}
         <main className="flex-1 bg-blue-600 text-white p-6 overflow-auto relative">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold">
@@ -339,6 +431,12 @@ const ProjectDetails: React.FC = () => {
                           ➕ Zadanie
                         </button>
                         <button
+                          onClick={() => setEditingColumn(col)}
+                          className="text-blue-500 text-xs"
+                        >
+                          ✏️
+                        </button>
+                        <button
                           onClick={() => onDeleteColumn(col._id)}
                           className="text-red-500 text-xs"
                         >
@@ -360,12 +458,23 @@ const ProjectDetails: React.FC = () => {
                               </div>
                             )}
                           </div>
-                          <button
-                            onClick={() => onDeleteTask(col._id, task._id)}
-                            className="text-red-500 text-xs"
-                          >
-                            🗑️
-                          </button>
+                          <div className="flex flex-col items-end space-y-1">
+                            <button
+                              onClick={() => {
+                                setSelectedColumn(col._id);
+                                setSelectedTask(task);
+                              }}
+                              className="text-blue-500 text-xs"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => onDeleteTask(col._id, task._id)}
+                              className="text-red-500 text-xs"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -396,7 +505,6 @@ const ProjectDetails: React.FC = () => {
             </div>
           )}
 
-          {/* Footer info */}
           <div className="absolute bottom-0 left-0 w-full text-sm bg-gray-900 text-white text-center py-2">
             {selectedGroup
               ? project.groups.map((info) =>
